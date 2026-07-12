@@ -43,7 +43,7 @@ class ORANCSVGenerator:
 
         # Columns
         self.cucp_columns = ["cluster", "gNBId", "gNBCUName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1cIpAddress", "xncIpAddress", "ngcIpAddress", "xncRelation", "mcc", "mnc", "gcProfile", "description"]
-        self.cuup_columns = ["cluster", "gNBId", "gNBCUUPName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1cIpAddress", "s1uIpAddress", "mcc", "mnc", "gcProfile", "description", "f1uGatewayAddress", "nguIpAddress", "nguGatewayAddress", "sliceProfile"]
+        self.cuup_columns = ["cluster", "gNBId", "gNBCUUPName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1uIpAddress", "s1uIpAddress", "mcc", "mnc", "gcProfile", "description", "f1uGatewayAddress", "nguIpAddress", "nguGatewayAddress", "sliceProfile"]
         self.du_columns = ["cluster", "gnbId", "gNBCUUPIds", "gNBDUId", "gNBDUName", "ruIpAddress", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "f1cIpAddress", "f1uIpAddress", "mcc", "mnc", "rRMPolicyDedicatedRatio", "rRMPolicyMaxRatio", "rRMPolicyMinRatio", "description"]
         self.oru_columns = ["gNBId", "gNBDUId", "ruId", "radioSerialNumber", "siteId", "siteLatitude", "siteLongitute", "type", "manufacturer", "cuPlaneInterface", "cuPlaneVlanId", "enableAisg", "version", "gcProfile", "baseInterfaceName", "radioCUPlanVlanId", "description"]
         self.nrcell_columns = ["radioSerialNumber", "cellLocalId", "nrCellName", "retAntennas", "sectorId", "sectorCarrierId", "band", "carrierId", "tx", "rx", "bandwidth", "mcc", "mnc", "nRPCI", "nRTAC", "rootSequenceIndex", "txDirection", "configuredMaxTxPower", "arfcnDL", "arfcnUL", "bSChannelBwDL", "bSChannelBwUL", "ssbFrequency", "ssbCarrierOffset", "controlResSetZero", "offsetToPointA", "cellReserveState", "ssbTransBitmap", "description"]
@@ -97,7 +97,7 @@ class ORANCSVGenerator:
             "confdIpAddress": self.dummy_ip,
             "confdProxyIpAddress": self.dummy_ip,
             "e1cIpAddress": self.dummy_ip,
-            "f1cIpAddress": self.dummy_ip,
+            "f1uIpAddress": self.dummy_ip,
             "s1uIpAddress": self.dummy_ip,
             "mcc": self.mcc,
             "mnc": self.mnc,
