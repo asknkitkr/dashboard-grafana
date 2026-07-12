@@ -7,7 +7,8 @@ import os
 class Config:
     def __init__(self, filepath='config.properties'):
         self.config = configparser.ConfigParser()
-        self.filepath = filepath
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.filepath = os.path.join(base_dir, filepath)
         self.start_gnb_id = 11001
         self.total_nrcells = 54
         self.gc_profile = "default"
@@ -204,15 +205,18 @@ class ORANCSVGenerator:
             })
 
     def write_csvs(self):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
         folder_name = f"{self.config.start_gnb_id}_{self.config.total_nrcells}"
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
+        folder_path = os.path.join(base_dir, folder_name)
+        
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
             
-        self._write_csv(os.path.join(folder_name, "gNBCUCP.csv"), self.cucp_columns, self.cucp_data)
-        self._write_csv(os.path.join(folder_name, "gNBCUUP.csv"), self.cuup_columns, self.cuup_data)
-        self._write_csv(os.path.join(folder_name, "gNBDU.csv"), self.du_columns, self.du_data)
-        self._write_csv(os.path.join(folder_name, "oru.csv"), self.oru_columns, self.oru_data)
-        self._write_csv(os.path.join(folder_name, "nrcell.csv"), self.nrcell_columns, self.nrcell_data)
+        self._write_csv(os.path.join(folder_path, "gNBCUCP.csv"), self.cucp_columns, self.cucp_data)
+        self._write_csv(os.path.join(folder_path, "gNBCUUP.csv"), self.cuup_columns, self.cuup_data)
+        self._write_csv(os.path.join(folder_path, "gNBDU.csv"), self.du_columns, self.du_data)
+        self._write_csv(os.path.join(folder_path, "oru.csv"), self.oru_columns, self.oru_data)
+        self._write_csv(os.path.join(folder_path, "nrcell.csv"), self.nrcell_columns, self.nrcell_data)
 
     def _write_csv(self, filename, columns, data):
         with open(filename, 'w', newline='') as f:
