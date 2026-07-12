@@ -203,11 +203,15 @@ class ORANCSVGenerator:
             })
 
     def write_csvs(self):
-        self._write_csv("gNBCUCP.csv", self.cucp_columns, self.cucp_data)
-        self._write_csv("gNBCUUP.csv", self.cuup_columns, self.cuup_data)
-        self._write_csv("gNBDU.csv", self.du_columns, self.du_data)
-        self._write_csv("oru.csv", self.oru_columns, self.oru_data)
-        self._write_csv("nrcell.csv", self.nrcell_columns, self.nrcell_data)
+        folder_name = f"{self.config.start_gnb_id}_{self.config.total_nrcells}"
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+            
+        self._write_csv(os.path.join(folder_name, "gNBCUCP.csv"), self.cucp_columns, self.cucp_data)
+        self._write_csv(os.path.join(folder_name, "gNBCUUP.csv"), self.cuup_columns, self.cuup_data)
+        self._write_csv(os.path.join(folder_name, "gNBDU.csv"), self.du_columns, self.du_data)
+        self._write_csv(os.path.join(folder_name, "oru.csv"), self.oru_columns, self.oru_data)
+        self._write_csv(os.path.join(folder_name, "nrcell.csv"), self.nrcell_columns, self.nrcell_data)
 
     def _write_csv(self, filename, columns, data):
         with open(filename, 'w', newline='') as f:
