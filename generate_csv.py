@@ -43,7 +43,7 @@ class ORANCSVGenerator:
 
         # Columns
         self.cucp_columns = ["cluster", "gNBId", "gNBCUName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1cIpAddress", "xncIpAddress", "ngcIpAddress", "xncRelation", "mcc", "mnc", "gcProfile", "description"]
-        self.cuup_columns = ["cluster", "gNBId", "gNBCUUPName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1uIpAddress", "s1uIpAddress", "mcc", "mnc", "gcProfile", "description", "f1uGatewayAddress", "nguIpAddress", "nguGatewayAddress", "sliceProfile"]
+        self.cuup_columns = ["cluster", "gNBId", "gNBCUUPId", "gNBCUUPName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1uIpAddress", "s1uIpAddress", "mcc", "mnc", "gcProfile", "description", "f1uGatewayAddress", "nguIpAddress", "nguGatewayAddress", "sliceProfile"]
         self.du_columns = ["cluster", "gnbId", "gNBCUUPIds", "gNBDUId", "gNBDUName", "ruIpAddress", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "f1cIpAddress", "f1uIpAddress", "mcc", "mnc", "rRMPolicyDedicatedRatio", "rRMPolicyMaxRatio", "rRMPolicyMinRatio", "description"]
         self.oru_columns = ["gNBId", "gNBDUId", "ruId", "radioSerialNumber", "siteId", "siteLatitude", "siteLongitute", "type", "manufacturer", "cuPlaneInterface", "cuPlaneVlanId", "enableAisg", "version", "gcProfile", "baseInterfaceName", "radioCUPlanVlanId", "description"]
         self.nrcell_columns = ["radioSerialNumber", "cellLocalId", "nrCellName", "retAntennas", "sectorId", "sectorCarrierId", "band", "carrierId", "tx", "rx", "bandwidth", "mcc", "mnc", "nRPCI", "nRTAC", "rootSequenceIndex", "txDirection", "configuredMaxTxPower", "arfcnDL", "arfcnUL", "bSChannelBwDL", "bSChannelBwUL", "ssbFrequency", "ssbCarrierOffset", "controlResSetZero", "offsetToPointA", "cellReserveState", "ssbTransBitmap", "description"]
@@ -90,6 +90,7 @@ class ORANCSVGenerator:
         self.cuup_data.append({
             "cluster": cluster_name,
             "gNBId": gnb_id,
+            "gNBCUUPId": 1,
             "gNBCUUPName": f"CUUP_{gnb_id}",
             "perfIpAddress": self.dummy_ip,
             "notifIpAddress": self.dummy_ip,
@@ -115,7 +116,7 @@ class ORANCSVGenerator:
             self.du_data.append({
                 "cluster": cluster_name,
                 "gnbId": gnb_id,
-                "gNBCUUPIds": f"CUUP_{gnb_id}",
+                "gNBCUUPIds": 1,
                 "gNBDUId": du_id,
                 "gNBDUName": f"DU_{gnb_id}_{du_id}",
                 "ruIpAddress": self.dummy_ip,
