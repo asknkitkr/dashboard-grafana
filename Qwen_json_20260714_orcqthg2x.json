@@ -1,0 +1,667 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 200,
+      "title": "📊 Live Service & App Snapshot (Point-in-Time)",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "CURRENT STATE of ALL services and third-party apps at this exact moment. Shows real-time CPU, Memory, Restart Count, and Ready Status. To export: Click panel title → Inspect → Data → Download CSV.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "displayMode": "auto" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "CPU (cores)" },
+            "properties": [{ "id": "unit", "value": "short" }, { "id": "decimals", "value": 3 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Memory" },
+            "properties": [{ "id": "unit", "value": "bytes" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Restarts" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 1 },
+                    { "color": "red", "value": 3 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Ready" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "options": { "0": { "text": "No", "color": "red" }, "1": { "text": "Yes", "color": "green" } }, "type": "value" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 1 },
+      "id": 201,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "CPU (cores)" }]
+      },
+      "targets": [
+        {
+          "expr": "sum by (deployment, namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$deployment.*\"}[$interval]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "CPU",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (deployment, namespace) (container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"$deployment.*\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Mem",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (deployment, namespace) (kube_pod_container_status_restarts_total{namespace=~\"$namespace\", pod=~\"$deployment.*\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Restarts",
+          "refId": "C"
+        },
+        {
+          "expr": "min by (deployment, namespace) (kube_pod_status_ready{namespace=~\"$namespace\", pod=~\"$deployment.*\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Ready",
+          "refId": "D"
+        }
+      ],
+      "title": "🔍 All Services Current State (Exportable)",
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "Value #A": "CPU (cores)",
+              "Value #B": "Memory",
+              "Value #C": "Restarts",
+              "Value #D": "Ready",
+              "deployment": "Service / Application",
+              "namespace": "Namespace"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "id": 100,
+      "title": "⚡ Cluster & Namespace Overview",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Total Running Pods. X: N/A (Stat) | Y: Count",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 12 },
+      "id": 1,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_phase{phase=\"Running\", namespace=~\"$namespace\"})",
+          "legendFormat": "Running Pods",
+          "refId": "A"
+        }
+      ],
+      "title": "Running Pods",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Aggregate CPU Usage. X: N/A | Y: Cores",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 12 },
+      "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"POD\", container!=\"\"}[$interval]))",
+          "legendFormat": "Total CPU",
+          "refId": "A"
+        }
+      ],
+      "title": "Total CPU (cores)",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Aggregate Working Set Memory. X: N/A | Y: Bytes",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 78 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 12 },
+      "id": 3,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"POD\", container!=\"\"})",
+          "legendFormat": "Total Mem",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Memory",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Pod Restarts in selected range. Threshold: 0=Green, 1-3=Yellow, >3=Red",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 12 },
+      "id": 5,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\"}[$interval]))",
+          "legendFormat": "Restarts",
+          "refId": "A"
+        }
+      ],
+      "title": "Pod Restarts",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "OOMKilled Events. Any value > 0 is Critical Red.",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 12 },
+      "id": 6,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(increase(kube_pod_container_status_terminated_reason{reason=\"OOMKilled\", namespace=~\"$namespace\"}[$interval]))",
+          "legendFormat": "OOMKilled",
+          "refId": "A"
+        }
+      ],
+      "title": "OOMKilled",
+      "type": "stat"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Namespace CPU Utilization vs Limits. X: Time | Y: Percentage (%)",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "CPU Utilization %" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 16 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"POD\", container!=\"\"}[$interval])) by (namespace) / sum(kube_pod_container_resource_limits{resource=\"cpu\", namespace=~\"$namespace\"}) by (namespace) * 100",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Namespace CPU Utilization %",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Namespace Memory Utilization vs Limits. X: Time | Y: Percentage (%)",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "Memory Utilization %" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 78 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 16 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"POD\", container!=\"\"}) by (namespace) / sum(kube_pod_container_resource_limits{resource=\"memory\", namespace=~\"$namespace\"}) by (namespace) * 100",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Namespace Memory Utilization %",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Node CPU Utilization. X: Time | Y: Percentage (%)",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "Node CPU %" },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 16 },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\", node=~\"$node\"}[$interval])) * 100)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Node CPU Utilization %",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 300,
+      "title": "☕ Third-Party Apps & Middleware Health",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "JVM Heap Memory for Java/Spring Boot services. X: Time | Y: Bytes",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "Heap Usage" },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 23 },
+      "id": 301,
+      "targets": [
+        {
+          "expr": "sum by (pod) (jvm_memory_used_bytes{namespace=~\"$namespace\", area=\"heap\", pod=~\"$pod\"})",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "JVM Heap Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Kafka Consumer Lag. Critical for message processing. X: Time | Y: Messages",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "Consumer Lag" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 5000 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 23 },
+      "id": 302,
+      "targets": [
+        {
+          "expr": "sum by (topic, group) (kafka_consumer_group_lag{namespace=~\"$namespace\"})",
+          "legendFormat": "{{group}}/{{topic}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Kafka Consumer Lag",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "PostgreSQL Active Connections vs Max. X: Time | Y: Count",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "Connections" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 23 },
+      "id": 303,
+      "targets": [
+        {
+          "expr": "sum by (pod) (pg_stat_activity_count{namespace=~\"$namespace\", state=\"active\"})",
+          "legendFormat": "Active {{pod}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (pod) (pg_settings_max_connections{namespace=~\"$namespace\"})",
+          "legendFormat": "Max {{pod}}",
+          "refId": "B"
+        }
+      ],
+      "title": "PostgreSQL Connections",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "id": 10,
+      "title": "💻 CPU Usage Deep Dive",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Per-pod CPU usage. X: Time | Y: Cores",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "CPU Cores" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 31 },
+      "id": 11,
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"POD\", container!=\"\"}[$interval]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Usage by Pod (cores)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Top 10 CPU consuming pods. X: Pod Name | Y: Cores",
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 31 },
+      "id": 15,
+      "targets": [
+        {
+          "expr": "topk(10, sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"POD\", container!=\"\"}[$interval])))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top 10 CPU Consumers",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 },
+      "id": 17,
+      "title": "🧠 Memory Usage Deep Dive",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Working set memory per pod. X: Time | Y: Bytes",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "Memory" },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 39 },
+      "id": 18,
+      "targets": [
+        {
+          "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"$pod\", container!=\"POD\", container!=\"\"})",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory Usage by Pod",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Top 10 Memory consuming pods. X: Pod Name | Y: Bytes",
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 39 },
+      "id": 22,
+      "targets": [
+        {
+          "expr": "topk(10, sum by (pod, namespace) (container_memory_working_set_bytes{namespace=~\"$namespace\", container!=\"POD\", container!=\"\"}))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top 10 Memory Consumers",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 46 },
+      "id": 32,
+      "title": "🏗️ Per Service Breakdown (IRMAS & Infra)",
+      "type": "row"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "CPU breakdown for IRMAS services. X: Time | Y: Cores",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "CPU Cores" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 47 },
+      "id": 35,
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"irmas.*\"}[$interval]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "IRMAS Services - CPU",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "CPU for Infrastructure (Kafka, Postgres, Cassandra). X: Time | Y: Cores",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "axisLabel": "CPU Cores" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 47 },
+      "id": 37,
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"(kafka|postgres|cassandra).*\"}[$interval]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Infrastructure Services - CPU",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["kubernetes", "performance", "sre", "v3", "services"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },
+        "hide": 0,
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(kube_namespace_created, namespace)",
+        "includeAll": true,
+        "multi": true,
+        "name": "namespace",
+        "query": "label_values(kube_namespace_created, namespace)",
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(kube_deployment_labels{namespace=~\"$namespace\"}, deployment)",
+        "includeAll": true,
+        "multi": true,
+        "name": "deployment",
+        "query": "label_values(kube_deployment_labels{namespace=~\"$namespace\"}, deployment)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)",
+        "includeAll": true,
+        "multi": true,
+        "name": "pod",
+        "query": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(kube_service_info{namespace=~\"$namespace\"}, service)",
+        "includeAll": true,
+        "multi": true,
+        "name": "service",
+        "query": "label_values(kube_service_info{namespace=~\"$namespace\"}, service)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(kube_node_info, node)",
+        "includeAll": true,
+        "multi": true,
+        "name": "node",
+        "query": "label_values(kube_node_info, node)",
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "auto": true,
+        "auto_min": "10s",
+        "current": { "selected": false, "text": "5m", "value": "5m" },
+        "name": "interval",
+        "query": "1m,5m,10m,30m,1h,6h,12h,1d",
+        "type": "interval"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "Kubernetes Performance & Scalability Dashboard v3",
+  "uid": "k8s-perf-v3",
+  "version": 3
+}
