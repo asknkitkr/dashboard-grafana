@@ -1,39 +1,49 @@
+# generate_csv.py – Generates ORAN CSV files based on the provided configuration
+# Supports IPv4/IPv6 selection and dynamic GC profile suffixes
 import csv
 import math
 import random
 import configparser
 import os
 
-class Config:
+class Config:  # Handles loading and storing configuration values
     def __init__(self, filepath='config.properties'):
         self.config = configparser.ConfigParser()
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.filepath = os.path.join(base_dir, filepath)
-        self.start_gnb_id = 11001
+        self.start_gnb_id = 11001 # default value
         self.total_nrcells = 54
-        self.gc_profile = "default"
+        self.gc_profile = "77.1.1"  # Base GC profile identifier
+        self.ip_addr_class = "ipv4"  # default class type
+        self.ipv4_address = "10.10.10.10"  # Default IPv4 address used when class is ipv4
+        self.ipv6_address = "fd10:298c:8df3:398:c3:0:1:75d0"  # Default IPv6 address used when class is ipv6
         self.load_config()
 
+    # Load configuration values from the properties file, applying defaults if missing
     def load_config(self):
         if not os.path.exists(self.filepath):
-            print(f"Warning: {self.filepath} not found. Using default values.")
+            print(f"[Warning]: {self.filepath} not found. Using default values.")
             return
 
         self.config.read(self.filepath)
         if 'DEFAULT' in self.config:
             default_section = self.config['DEFAULT']
-            self.start_gnb_id = int(default_section.get('StartingGNodeBId', self.start_gnb_id))
-            self.total_nrcells = int(default_section.get('NumberOfNRCells', self.total_nrcells))
+            self.start_gnb_id = int(default_section.get('StartingGNodeBId', self.start_gnb_id)) # Starting GNodeB ID (default 15001)
+            self.total_nrcells = int(default_section.get('NumberOfNRCells', self.total_nrcells)) # Total number of NR cells to generate
             self.gc_profile = default_section.get('GCProfile', self.gc_profile)
+            self.ip_addr_class = default_section.get('IPAddrClassType', self.ip_addr_class).lower() # IP address class type: ipv4 or ipv6
+            self.ipv4_address = default_section.get('IPv4Address', self.ipv4_address)
+            self.ipv6_address = default_section.get('IPv6Address', self.ipv6_address)
 
 
-class ORANCSVGenerator:
-    def __init__(self, config):
+class ORANCSVGenerator:  # Generates CSV data using configuration settings
+    def __init__(self, config):  # Initialize generator with a Config instance
         self.config = config
-        self.dummy_ip = "10.10.10.10"
+        # Use IPv6 address as the generic dummy IP for all components except CUUP
+        self.dummy_ip = self.config.ipv6_address
         self.mcc = "001"
         self.mnc = "01"
-        self.gc_profile_full = f"{self.config.gc_profile}@default"
+        self.gc_profile_full = f"{self.config.gc_profile}@default_ipv4" if self.config.ip_addr_class == "ipv4" else f"{self.config.gc_profile}@default"
         
         # Accumulated data
         self.cucp_data = []
@@ -46,9 +56,10 @@ class ORANCSVGenerator:
         self.cucp_columns = ["cluster", "gNBId", "gNBCUName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1cIpAddress", "xncIpAddress", "ngcIpAddress", "xncRelation", "mcc", "mnc", "gcProfile", "description"]
         self.cuup_columns = ["cluster", "gNBId", "gNBCUUPId", "gNBCUUPName", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "e1cIpAddress", "f1uIpAddress", "s1uIpAddress", "mcc", "mnc", "gcProfile", "description", "f1uGatewayAddress", "nguIpAddress", "nguGatewayAddress", "sliceProfile"]
         self.du_columns = ["cluster", "gNBId", "gNBCUUPIds", "gNBDUId", "gNBDUName", "ruIpAddress", "perfIpAddress", "notifIpAddress", "certIpAddress", "confdIpAddress", "confdProxyIpAddress", "f1cIpAddress", "f1uIpAddress", "mcc", "mnc", "gcProfile", "rRMPolicyDedicatedRatio", "rRMPolicyMaxRatio", "rRMPolicyMinRatio", "description"]
-        self.oru_columns = ["gNBId", "gNBDUId", "ruId", "radioSerialNumber", "siteId", "siteLatitude", "siteLongitute", "type", "manufacturer", "cuPlaneInterface", "cuPlaneVlanId", "enableAisg", "version", "gcProfile", "baseInterfaceName", "radioCUPlanVlanId", "description"]
-        self.nrcell_columns = ["radioSerialNumber", "cellLocalId", "nrCellName", "retAntennas", "sectorId", "sectorCarrierId", "band", "carrierId", "tx", "rx", "bandwidth", "mcc", "mnc", "nRPCI", "nRTAC", "rootSequenceIndex", "txDirection", "configuredMaxTxPower", "arfcnDL", "arfcnUL", "bSChannelBwDL", "bSChannelBwUL", "ssbFrequency", "ssbCarrierOffset", "controlResSetZero", "offsetToPointA", "cellReserveState", "ssbTransBitmap", "description"]
+        self.oru_columns = ["gNBId", "gNBDUId", "ruId", "radioSerialNumber", "siteId", "siteLatitude", "siteLongitude", "type", "manufacturer", "cuPlaneInterface", "cuPlaneVlanId", "enableAisg", "version", "gcProfile", "baseInterfaceName", "radioCUPlaneVlanId", "description"]
+        self.nrcell_columns = ["radioSerialNumber", "cellLocalId", "nrCellName", "retAntennas", "sectorId", "sectorCarrierId", "band", "carrierId", "tx", "rx", "bandwidth", "mcc", "mnc", "nRPCI", "nRTAC", "rootSequenceIndex", "txDirection", "configuredMaxTxPower", "arfcnDL", "arfcnUL", "bSChannelBwDL", "bSChannelBwUL", "ssbFrequency", "ssbSubCarrierOffset", "controlResSetZero", "offsetToPointA", "cellReserveState", "ssbTransBitmap", "description"]
 
+    # Generate all CSV data based on configuration and append to internal lists
     def generate_data(self):
         cells_remaining = self.config.total_nrcells
         current_gnb_id = self.config.start_gnb_id
@@ -66,6 +77,7 @@ class ORANCSVGenerator:
             cells_remaining -= cells_for_this_gnb
             current_gnb_id += 1
 
+    # Generate CU-CP entry for a given gNodeB ID and cluster name
     def _generate_cucp(self, gnb_id, cluster_name):
         self.cucp_data.append({
             "cluster": cluster_name,
@@ -87,23 +99,24 @@ class ORANCSVGenerator:
             "description": f"CUCP for gNB {gnb_id}"
         })
 
+    # Generate CU-UP entry for a given gNodeB ID and cluster name
     def _generate_cuup(self, gnb_id, cluster_name):
         self.cuup_data.append({
             "cluster": cluster_name,
             "gNBId": gnb_id,
             "gNBCUUPId": 1,
             "gNBCUUPName": f"CUUP_{gnb_id}",
-            "perfIpAddress": self.dummy_ip,
-            "notifIpAddress": self.dummy_ip,
-            "certIpAddress": self.dummy_ip,
-            "confdIpAddress": self.dummy_ip,
-            "confdProxyIpAddress": self.dummy_ip,
-            "e1cIpAddress": self.dummy_ip,
-            "f1uIpAddress": self.dummy_ip,
-            "s1uIpAddress": self.dummy_ip,
+            "perfIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
+            "notifIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
+            "certIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
+            "confdIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
+            "confdProxyIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
+            "e1cIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
+            "f1uIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
+            "s1uIpAddress": self.config.ipv4_address if self.config.ip_addr_class == "ipv4" else self.config.ipv6_address,
             "mcc": self.mcc,
             "mnc": self.mnc,
-            "gcProfile": self.gc_profile_full,
+            "gcProfile": (f"{self.config.gc_profile}@default_ipv4" if self.config.ip_addr_class == "ipv4" else f"{self.config.gc_profile}@default"),
             "description": f"CUUP for gNB {gnb_id}",
             "f1uGatewayAddress": self.dummy_ip,
             "nguIpAddress": self.dummy_ip,
@@ -111,6 +124,7 @@ class ORANCSVGenerator:
             "sliceProfile": "nsp1"
         })
 
+    # Generate DU entries, distributing cells across DUs
     def _generate_du(self, gnb_id, cluster_name, cells_for_this_gnb):
         num_dus = math.ceil(cells_for_this_gnb / 3.0)
         for du_id in range(1, num_dus + 1):
@@ -119,7 +133,7 @@ class ORANCSVGenerator:
                 "gNBId": gnb_id,
                 "gNBCUUPIds": 1,
                 "gNBDUId": du_id,
-                "gNBDUName": f"DU_{gnb_id}_{du_id}",
+                "gNBDUName": f"DU_{gnb_id + du_id - 1}",
                 "ruIpAddress": self.dummy_ip,
                 "perfIpAddress": self.dummy_ip,
                 "notifIpAddress": self.dummy_ip,
@@ -137,6 +151,7 @@ class ORANCSVGenerator:
                 "description": f"DU {du_id} for gNB {gnb_id}"
             })
 
+    # Generate ORU and NRCell entries for each cell
     def _generate_oru_and_nrcell(self, gnb_id, cells_for_this_gnb):
         for cell_id in range(1, cells_for_this_gnb + 1):
             # 1 DU has 3 ORUs
@@ -150,7 +165,7 @@ class ORANCSVGenerator:
             
             sector_id = (cell_id - 1) % 2
             
-            site_lat = f"{random.uniform(-180.0, 180.0):.5f}"
+            site_lat = f"{random.uniform(-90.0, 90.0):.5f}"
             site_long = f"{random.uniform(-180.0, 180.0):.5f}"
             
             self.oru_data.append({
@@ -160,7 +175,7 @@ class ORANCSVGenerator:
                 "radioSerialNumber": radio_serial_number,
                 "siteId": f"gnb-{gnb_id}-site-{sector_id}",
                 "siteLatitude": site_lat,
-                "siteLongitute": site_long,
+                "siteLongitude": site_long,
                 "type": "ORAN",
                 "manufacturer": "Prose",
                 "cuPlaneInterface": "plane1",
@@ -169,7 +184,7 @@ class ORANCSVGenerator:
                 "version": "",
                 "gcProfile": self.gc_profile_full,
                 "baseInterfaceName": "eth0",
-                "radioCUPlanVlanId": 1,
+                "radioCUPlaneVlanId": 1,
                 "description": f"ORU {oru_id} for gNB {gnb_id}"
             })
             
@@ -197,7 +212,7 @@ class ORANCSVGenerator:
                 "bSChannelBwDL": 100,
                 "bSChannelBwUL": 100,
                 "ssbFrequency": 656640,
-                "ssbCarrierOffset": 6,
+                "ssbSubCarrierOffset": 6,
                 "controlResSetZero": 7,
                 "offsetToPointA": 100,
                 "cellReserveState": "PLMN_ID_INFO_NOT_RESERVED",
@@ -205,9 +220,10 @@ class ORANCSVGenerator:
                 "description": f"NRCell {cell_id} for gNB {gnb_id}"
             })
 
+    # Write all accumulated data to CSV files in an output folder
     def write_csvs(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        folder_name = f"{self.config.start_gnb_id}_{self.config.total_nrcells}"
+        folder_name = f"gNodeB-{self.config.start_gnb_id}_nrcell_count-{self.config.total_nrcells}"
         folder_path = os.path.join(base_dir, folder_name)
         
         if not os.path.exists(folder_path):
@@ -219,6 +235,7 @@ class ORANCSVGenerator:
         self._write_csv(os.path.join(folder_path, "oru.csv"), self.oru_columns, self.oru_data)
         self._write_csv(os.path.join(folder_path, "nrcell.csv"), self.nrcell_columns, self.nrcell_data)
 
+    # Helper to write a list of dictionaries to a CSV file with given columns
     def _write_csv(self, filename, columns, data):
         with open(filename, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=columns)
