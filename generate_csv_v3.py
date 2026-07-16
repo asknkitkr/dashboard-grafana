@@ -141,9 +141,10 @@ class ORANCSVGenerator:
         self.cfg = cfg
         self.mcc = "001"
         self.mnc = "01"
-        self.gc_profile_full = (
-            f"{cfg.gc_profile}@default_ipv4" if cfg.ip_addr_class == "ipv4" else f"{cfg.gc_profile}@default"
-        )
+        # Separate GC profile suffixes
+        self.gc_profile_default = f"{cfg.gc_profile}@default"
+        self.gc_profile_ipv4 = f"{cfg.gc_profile}@default_ipv4"
+
         # Column definitions – kept identical to previous versions for compatibility
         self.cucp_columns = [
             "cluster",
@@ -308,7 +309,7 @@ class ORANCSVGenerator:
             "xncRelation": "",
             "mcc": self.mcc,
             "mnc": self.mnc,
-            "gcProfile": self.gc_profile_full,
+            "gcProfile": self.gc_profile_default,
             "description": f"CUCP for gNB {gnb_id}",
         })
 
@@ -329,7 +330,7 @@ class ORANCSVGenerator:
             "s1uIpAddress": ip,
             "mcc": self.mcc,
             "mnc": self.mnc,
-            "gcProfile": self.gc_profile_full,
+            "gcProfile": self.gc_profile_ipv4 if self.cfg.ip_addr_class == "ipv4" else self.gc_profile_default,
             "description": f"CUUP for gNB {gnb_id}",
             "f1uGatewayAddress": get_ip("cucp", self.cfg),
             "nguIpAddress": get_ip("cucp", self.cfg),
@@ -356,7 +357,7 @@ class ORANCSVGenerator:
                 "f1uIpAddress": get_ip("cucp", self.cfg),
                 "mcc": self.mcc,
                 "mnc": self.mnc,
-                "gcProfile": self.gc_profile_full,
+                "gcProfile": self.gc_profile_default,
                 "rRMPolicyDedicatedRatio": 0,
                 "rRMPolicyMaxRatio": 100,
                 "rRMPolicyMinRatio": 0,
@@ -394,7 +395,7 @@ class ORANCSVGenerator:
                 "cuPlaneVlanId": 60,
                 "enableAisg": "false",
                 "version": "",
-                "gcProfile": self.gc_profile_full,
+                "gcProfile": self.gc_profile_default,
                 "baseInterfaceName": "eth0",
                 "radioCUPlaneVlanId": 1,
                 "description": f"ORU {oru_index} for gNB {gnb_id}",
