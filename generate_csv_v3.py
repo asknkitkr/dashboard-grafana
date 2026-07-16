@@ -112,8 +112,8 @@ def get_ip(component: str, cfg: Config) -> str:
     ``component`` can be ``cuup`` (uses the configured class) or any other
     component which always receives the IPv6 address.
     """
-    if component == "cuup":
-        return cfg.ipv4_address if cfg.ip_addr_class == "ipv4" else cfg.ipv6_address
+    if cfg.ip_addr_class == "ipv4":
+        return cfg.ipv4_address
     return cfg.ipv6_address
 
 def export_csv(data: List[Dict[str, Any]], columns: List[str], out_path: Path) -> None:
